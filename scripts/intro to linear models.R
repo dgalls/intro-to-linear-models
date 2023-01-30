@@ -125,9 +125,19 @@ difference_summary %>%
 
 # "the average difference in height was 2.62 ± 1.22 inches (mean ± SE)."
 
+# CONFIDENCE INTERVALS ----
 
+lowerCI <- 2.62-(2*1.22)
 
+upperCI <- 2.62+(2*1.22)
 
+lowerCI
+upperCI
+
+# "The maize plants that have been cross pollinated were 
+#     taller on average than the self-pollinated plants, 
+#     with a mean difference in height of 
+#       2.62 [0.18, 5.06] inches (mean [95% CI])."
 
 
 
