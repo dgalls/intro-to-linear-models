@@ -3,6 +3,10 @@
 library(tidyverse)
 library(here)
 library(kableExtra)
+library(GGally)
+library(broom.helpers)
+library(emmeans)
+library(performance)
 
 darwin <- read_csv(here("data", "darwin.csv"))
 
@@ -138,6 +142,124 @@ upperCI
 #     taller on average than the self-pollinated plants, 
 #     with a mean difference in height of 
 #       2.62 [0.18, 5.06] inches (mean [95% CI])."
+
+# LINEAR MODELS ----
+
+## lsmodel0 ----
+
+lsmodel0 <- lm(formula = height ~ 1, data = darwin)
+
+lsmodel0
+
+### broom ----
+
+broom::tidy(lsmodel0) # overall mean
+
+broom::glance(lsmodel0) 
+
+broom::augment(lsmodel0) 
+
+### comparing means ----
+
+darwin %>% 
+  group_by(type) %>% 
+  summarise(mean=mean(height))
+
+lsmodel1 <- lm(height ~ type, data=darwin)
+
+# note that the following is identical
+#     lsmodel1 <- lm(height ~ 1 + type, data=darwin)
+
+broom::tidy(lsmodel1)
+
+## summary ----
+
+summary(lsmodel1)
+
+darwin %>% 
+  ggplot(aes(x=type, 
+             y=height,
+             colour=type))+
+  geom_jitter(alpha=0.5,
+              width=0.1)+
+  stat_summary(fun=mean,
+               size=1.2)+
+  theme_bw()
+
+## confidence intervals ----
+
+broom::tidy(lsmodel1, conf.int=T)
+
+GGally::ggcoef_model(lsmodel1,
+                     show_p_values=FALSE, 
+                     conf.level=0.95)
+
+broom::tidy(lsmodel1, conf.int=T, conf.level=0.99)
+
+## for 'other' mean ----
+
+darwin %>% 
+  mutate(type=factor(type)) %>% 
+  mutate(type=fct_relevel(type, c("Self", "Cross"))) %>% 
+  lm(height~type, data=.) %>% 
+  broom::tidy()
+
+### emmeans ----
+
+means <- emmeans::emmeans(lsmodel1, specs = ~ type)
+
+means %>% 
+  as_tibble() %>% 
+  ggplot(aes(x=type, 
+             y=emmean))+
+  geom_pointrange(aes(
+    ymin=lower.CL, 
+    ymax=upper.CL))
+
+means
+
+# CHECKING ASSUMPTIONS ----
+
+## base R ----
+
+performance::check_model(lsmodel1)
+
+## tidyverse ----
+
+#plot(lsmodel1)
+
+## normality check ----
+
+performance::check_model(lsmodel1, check=c("normality","qq"))
+
+plot(lsmodel1, which=c(2,2))
+
+## equal variance check ----
+
+performance::check_model(lsmodel1, check="homogeneity")
+
+plot(lsmodel1, which=c(1,3))
+
+## outliers check ----
+
+performance::check_model(lsmodel1, check="outliers")
+
+plot(lsmodel1, which=c(4,4))
+
+## summary ----
+
+darwin %>% 
+  ggplot(aes(x=type, 
+             y=height))+
+  geom_jitter(width=0.1, 
+              pch=21, 
+              aes(fill=type))+
+  theme_classic()+
+  geom_segment(aes(x=1, xend=2, y=20.192, yend=20.192-2.617), linetype="dashed")+
+  stat_summary(fun.y=mean, geom="crossbar", width=0.2)
+
+# STUDENT'S T-TEST
+
 
 
 
