@@ -6,6 +6,7 @@ library(performance)
 library(patchwork)
 
 janka <- read_csv(here("data", "janka.csv"))
+darwin <- read_csv(here("data", "darwin.csv"))
 
 ## tidy ----
 
@@ -100,21 +101,68 @@ p1 <- model_plot() # A line connecting all the data points in order
 p2 <- model_plot(y=".fitted", title="Linear prediction") # Plotting the fitted values against the independent e.g. our regression line
 p3 <- model_plot(y=".resid", title="Remaining pattern") # Plotting the residuals against the fitted values e.g. remaining variance
 
+## normality of residuals ----
+
+performance::check_model(janka_ls1, check=c("normality","qq"))
+
+## equal variance ----
+
+performance::check_model(janka_ls1, check="homogeneity")
+
+## outliers ----
+
+performance::check_model(janka_ls1, check="outliers")
+
+# PREDICTIONS ----
+
+coef(janka_ls1)  # estimates intercept and slope
+
+#predict(janka_ls1)
+
+broom::augment(janka_ls1, 
+               newdata=tibble(dens=c(22, 35, 65)),
+               se = TRUE,                          # standard error
+               interval = "confidence")            # confidence intervals               
+
+## using emmeans ---
+
+emmeans::emmeans(janka_ls1, 
+                 specs = "dens", 
+                 at = list(dens = c(22, 35, 65)))
+
+## plotting predictions onto an existing figure ----
+
+pred_newdata <- broom::augment(janka_ls1, 
+                               newdata=tibble(dens=c(22, 35, 65)))
+
+janka %>%                                             # piping in data
+  ggplot(aes(x=dens, y=hardness))+                    # plot
+  geom_point()+                                       
+  geom_smooth(method="lm")+
+  geom_point(data=pred_newdata, 
+             aes(y=.fitted, x=dens), 
+             colour="red")+
+  geom_label(data=pred_newdata, 
+             (aes(y=(.fitted+10), x=(dens+3), 
+                  label=round(.fitted, digits=0))))+
+  theme_bw()+
+  labs(x="Density", y="Timber Hardness")+
+  scale_x_continuous(limits=c(20,70), 
+                     expand=expansion(add=c(0,5)))
+
+# ANOVA ----
+
+## model 1 ----
+
+lsmodel1 <- lm(height ~ type, data = darwin)
+
+anova(lsmodel1)
+
+## model 2 ----
 
 
+lsmodel2 <- lm(height ~ type + as.factor(pair), data = darwin)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+anova(lsmodel2)
 
 
