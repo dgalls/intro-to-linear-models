@@ -118,7 +118,13 @@ ls_3 <- lm(Biomass.m2 ~ Fert + Light, data = biomass)
 
 drop1(ls_3, test = "F")                       # we have to remove the interaction term before we can keep using drop1()
 
+# ESTIMATED MEANS & PAIRWISE COMPARISONS ----
 
+emmeans::emmeans(ls_2, specs = pairwise ~ Light + Fert + Light:Fert) %>% 
+  confint()
+# including the argument pairwise in front of the ~ prompts the post-hoc pairwise comparisons.
+# $emmeans contains the estimate mean values for each possible combination (with confidence intervals)
+# $ contrasts contains tukey test post hoc comparisons between levels
 
 
 
